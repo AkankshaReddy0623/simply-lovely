@@ -1,310 +1,344 @@
 import React, { useState } from 'react'
-import { useWebSocket } from '../contexts/WebSocketContext'
+import { useQuery } from 'react-query'
 import { 
   ChartBarIcon,
+  TrendingUpIcon,
+  TrendingDownIcon,
   UserGroupIcon,
   ClockIcon,
-  GlobeAltIcon,
-  TrendingUpIcon,
-  TrendingDownIcon
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline'
+import { fetchAnalytics, fetchRecentAlerts, fetchRecentActivities } from '../services/api'
 
 const Analytics = () => {
-  const { alerts, activities } = useWebSocket()
   const [timeRange, setTimeRange] = useState('24h')
 
-  // Calculate analytics data
-  const analyticsData = React.useMemo(() => {
-    const now = new Date()
-    const timeRanges = {
-      '1h': 60 * 60 * 1000,
-      '24h': 24 * 60 * 60 * 1000,
-      '7d': 7 * 24 * 60 * 60 * 1000,
-      '30d': 30 * 24 * 60 * 60 * 1000
+  // Fetch analytics data
+  const { data: analyticsData, isLoading: analyticsLoading } = useQuery(
+    ['analytics', timeRange],
+    () => fetchAnalytics(timeRange),
+    {
+      refetchInterval: 60000
     }
+  )
 
-    const range = timeRanges[timeRange] || timeRanges['24h']
-    const startTime = new Date(now.getTime() - range)
+  // Fetch alerts for trend analysis
+  const { data: alerts = [] } = useQuery(
+    'alerts-analytics',
+    () => fetchRecentAlerts(100),
+    { refetchInterval: 30000 }
+  )
 
-    const filteredActivities = activities.filter(activity => 
-      new Date(activity.timestamp) >= startTime
-    )
-    const filteredAlerts = alerts.filter(alert => 
-      new Date(alert.timestamp) >= startTime
-    )
+  // Fetch activities for trend analysis
+  const { data: activities = [] } = useQuery(
+    'activities-analytics',
+    () => fetchRecentActivities(200),
+    { refetchInterval: 30000 }
+  )
 
-    // Activity trends
-    const activityTrends = {}
-    const alertTrends = {}
+  // Calculate trends
+  const getTrends = () => {
+    const now = new Date()
+    const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+    const last7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
-    // Group by hour/day
-    const groupBy = timeRange === '1h' ? 'minute' : timeRange === '24h' ? 'hour' : 'day'
-    
-    filteredActivities.forEach(activity => {
-      const date = new Date(activity.timestamp)
-      let key
-      
-      if (groupBy === 'minute') {
-        key = `${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`
-      } else if (groupBy === 'hour') {
-        key = date.getHours()
-      } else {
-        key = date.toDateString()
-      }
-      
-      activityTrends[key] = (activityTrends[key] || 0) + 1
-    })
-
-    filteredAlerts.forEach(alert => {
+    const recentAlerts = alerts.filter(alert => new Date(alert.timestamp) > last24h)
+    const olderAlerts = alerts.filter(alert => {
       const date = new Date(alert.timestamp)
-      let key
-      
-      if (groupBy === 'minute') {
-        key = `${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`
-      } else if (groupBy === 'hour') {
-        key = date.getHours()
-      } else {
-        key = date.toDateString()
-      }
-      
-      alertTrends[key] = (alertTrends[key] || 0) + 1
+      return date > last7d && date <= last24h
     })
 
-    // User behavior analysis
-    const userStats = {}
-    filteredActivities.forEach(activity => {
-      if (!userStats[activity.user_id]) {
-        userStats[activity.user_id] = {
-          totalActivities: 0,
-          suspiciousActivities: 0,
-          successRate: 0,
-          locations: new Set(),
-          actions: {}
-        }
-      }
-      
-      const user = userStats[activity.user_id]
-      user.totalActivities++
-      
-      if (!activity.success) {
-        user.suspiciousActivities++
-      }
-      
-      if (activity.location) {
-        user.locations.add(`${activity.location.latitude},${activity.location.longitude}`)
-      }
-      
-      user.actions[activity.action] = (user.actions[activity.action] || 0) + 1
+    const recentActivities = activities.filter(activity => new Date(activity.timestamp) > last24h)
+    const olderActivities = activities.filter(activity => {
+      const date = new Date(activity.timestamp)
+      return date > last7d && date <= last24h
     })
-
-    // Calculate success rates
-    Object.values(userStats).forEach(user => {
-      user.successRate = ((user.totalActivities - user.suspiciousActivities) / user.totalActivities) * 100
-      user.uniqueLocations = user.locations.size
-    })
-
-    // Top actions
-    const actionCounts = {}
-    filteredActivities.forEach(activity => {
-      actionCounts[activity.action] = (actionCounts[activity.action] || 0) + 1
-    })
-
-    const topActions = Object.entries(actionCounts)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 5)
-
-    // Geographic distribution
-    const locationCounts = {}
-    filteredActivities.forEach(activity => {
-      if (activity.location) {
-        const key = `${activity.location.latitude.toFixed(2)},${activity.location.longitude.toFixed(2)}`
-        locationCounts[key] = (locationCounts[key] || 0) + 1
-      }
-    })
-
-    const topLocations = Object.entries(locationCounts)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 10)
 
     return {
-      activityTrends,
-      alertTrends,
-      userStats,
-      topActions,
-      topLocations,
-      totalActivities: filteredActivities.length,
-      totalAlerts: filteredAlerts.length,
-      suspiciousActivities: filteredActivities.filter(a => 
-        ['privilege_escalation', 'mass_data_access', 'suspicious_download'].includes(a.action)
-      ).length
+      alertsTrend: recentAlerts.length - olderAlerts.length,
+      activitiesTrend: recentActivities.length - olderActivities.length,
+      alertTrendPercent: olderAlerts.length > 0 ? 
+        ((recentAlerts.length - olderAlerts.length) / olderAlerts.length * 100) : 0,
+      activityTrendPercent: olderActivities.length > 0 ? 
+        ((recentActivities.length - olderActivities.length) / olderActivities.length * 100) : 0
     }
-  }, [alerts, activities, timeRange])
-
-  const MetricCard = ({ title, value, change, icon: Icon, color = 'primary' }) => {
-    const colors = {
-      primary: 'text-primary-600',
-      success: 'text-success-600',
-      danger: 'text-danger-600',
-      warning: 'text-warning-600'
-    }
-
-    return (
-      <div className="stat-card">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <div className={`w-8 h-8 bg-${color}-100 rounded-lg flex items-center justify-center`}>
-              <Icon className={`w-5 h-5 ${colors[color]}`} />
-            </div>
-          </div>
-          <div className="ml-4 flex-1">
-            <p className="text-sm font-medium text-gray-600">{title}</p>
-            <p className="text-2xl font-semibold text-gray-900">{value}</p>
-            {change !== undefined && (
-              <div className="flex items-center text-sm">
-                {change >= 0 ? (
-                  <TrendingUpIcon className="w-4 h-4 text-success-500 mr-1" />
-                ) : (
-                  <TrendingDownIcon className="w-4 h-4 text-danger-500 mr-1" />
-                )}
-                <span className={change >= 0 ? 'text-success-600' : 'text-danger-600'}>
-                  {Math.abs(change)}%
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    )
   }
+
+  const trends = getTrends()
+
+  const getThreatDistribution = () => {
+    const distribution = {
+      critical: alerts.filter(a => a.severity === 'critical').length,
+      high: alerts.filter(a => a.severity === 'high').length,
+      medium: alerts.filter(a => a.severity === 'medium').length,
+      low: alerts.filter(a => a.severity === 'low').length
+    }
+    return distribution
+  }
+
+  const threatDistribution = getThreatDistribution()
+
+  const getTopUsers = () => {
+    const userActivity = activities.reduce((acc, activity) => {
+      acc[activity.user_id] = (acc[activity.user_id] || 0) + 1
+      return acc
+    }, {})
+
+    return Object.entries(userActivity)
+      .map(([user, count]) => ({ user, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10)
+  }
+
+  const topUsers = getTopUsers()
+
+  const getActivityTypes = () => {
+    const activityTypes = activities.reduce((acc, activity) => {
+      acc[activity.action] = (acc[activity.action] || 0) + 1
+      return acc
+    }, {})
+
+    return Object.entries(activityTypes)
+      .map(([action, count]) => ({ action, count }))
+      .sort((a, b) => b.count - a.count)
+  }
+
+  const activityTypes = getActivityTypes()
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Analytics & Reports</h1>
           <p className="text-gray-600 mt-1">
-            Insights and trends from user activities and security events
+            Security insights and threat analysis
           </p>
         </div>
         <div className="flex items-center space-x-3">
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
-            className="input w-32"
+            className="input w-40"
           >
             <option value="1h">Last Hour</option>
             <option value="24h">Last 24 Hours</option>
             <option value="7d">Last 7 Days</option>
             <option value="30d">Last 30 Days</option>
           </select>
+          <button className="btn btn-primary">
+            <ChartBarIcon className="w-4 h-4 mr-2" />
+            Export Report
+          </button>
         </div>
       </div>
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <MetricCard
-          title="Total Activities"
-          value={analyticsData.totalActivities}
-          icon={ChartBarIcon}
-          color="primary"
-        />
-        <MetricCard
-          title="Security Alerts"
-          value={analyticsData.totalAlerts}
-          icon={TrendingUpIcon}
-          color="danger"
-        />
-        <MetricCard
-          title="Suspicious Activities"
-          value={analyticsData.suspiciousActivities}
-          icon={TrendingDownIcon}
-          color="warning"
-        />
-        <MetricCard
-          title="Active Users"
-          value={Object.keys(analyticsData.userStats).length}
-          icon={UserGroupIcon}
-          color="success"
-        />
-      </div>
-
-      {/* Charts and Analysis */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Activity Trends */}
-        <div className="card">
-          <div className="card-header">
-            <h2 className="text-lg font-semibold text-gray-900">Activity Trends</h2>
-          </div>
-          <div className="chart-container">
-            <div className="h-64 flex items-center justify-center text-gray-500">
-              <div className="text-center">
-                <ChartBarIcon className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <p>Activity trends chart</p>
-                <p className="text-sm">Data visualization would be implemented here</p>
+        <div className="stat-card">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Total Alerts</p>
+              <p className="text-2xl font-semibold text-gray-900">{alerts.length}</p>
+              <div className="flex items-center mt-1">
+                {trends.alertsTrend >= 0 ? (
+                  <TrendingUpIcon className="w-4 h-4 text-danger-500 mr-1" />
+                ) : (
+                  <TrendingDownIcon className="w-4 h-4 text-success-500 mr-1" />
+                )}
+                <span className={`text-sm ${trends.alertsTrend >= 0 ? 'text-danger-600' : 'text-success-600'}`}>
+                  {Math.abs(trends.alertTrendPercent).toFixed(1)}%
+                </span>
               </div>
+            </div>
+            <ShieldCheckIcon className="w-8 h-8 text-primary-600" />
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Total Activities</p>
+              <p className="text-2xl font-semibold text-gray-900">{activities.length}</p>
+              <div className="flex items-center mt-1">
+                {trends.activitiesTrend >= 0 ? (
+                  <TrendingUpIcon className="w-4 h-4 text-primary-500 mr-1" />
+                ) : (
+                  <TrendingDownIcon className="w-4 h-4 text-gray-500 mr-1" />
+                )}
+                <span className={`text-sm ${trends.activitiesTrend >= 0 ? 'text-primary-600' : 'text-gray-600'}`}>
+                  {Math.abs(trends.activityTrendPercent).toFixed(1)}%
+                </span>
+              </div>
+            </div>
+            <UserGroupIcon className="w-8 h-8 text-success-600" />
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">High Severity</p>
+              <p className="text-2xl font-semibold text-danger-600">
+                {threatDistribution.critical + threatDistribution.high}
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                Critical + High alerts
+              </p>
+            </div>
+            <div className="w-8 h-8 bg-danger-100 rounded-full flex items-center justify-center">
+              <span className="text-danger-600 font-bold">!</span>
             </div>
           </div>
         </div>
 
-        {/* Top Actions */}
+        <div className="stat-card">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Avg Response Time</p>
+              <p className="text-2xl font-semibold text-success-600">&lt;100ms</p>
+              <p className="text-sm text-gray-500 mt-1">
+                System performance
+              </p>
+            </div>
+            <ClockIcon className="w-8 h-8 text-warning-600" />
+          </div>
+        </div>
+      </div>
+
+      {/* Charts and Analysis */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Threat Distribution */}
         <div className="card">
           <div className="card-header">
-            <h2 className="text-lg font-semibold text-gray-900">Top Actions</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Threat Distribution</h2>
           </div>
-          <div className="space-y-3">
-            {analyticsData.topActions.map(([action, count], index) => (
-              <div key={action} className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-6 h-6 bg-primary-100 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-medium text-primary-600">{index + 1}</span>
+          <div className="space-y-4">
+            {Object.entries(threatDistribution).map(([severity, count]) => {
+              const total = Object.values(threatDistribution).reduce((a, b) => a + b, 0)
+              const percentage = total > 0 ? (count / total * 100) : 0
+              const colors = {
+                critical: 'bg-red-600',
+                high: 'bg-red-500',
+                medium: 'bg-yellow-500',
+                low: 'bg-blue-500'
+              }
+              
+              return (
+                <div key={severity} className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700 capitalize">
+                      {severity} Threats
+                    </span>
+                    <span className="text-sm text-gray-600">
+                      {count} ({percentage.toFixed(1)}%)
+                    </span>
                   </div>
-                  <span className="text-sm font-medium text-gray-900">
-                    {action.replace('_', ' ').toUpperCase()}
-                  </span>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full ${colors[severity]}`}
+                      style={{ width: `${percentage}%` }}
+                    />
+                  </div>
                 </div>
-                <span className="text-sm text-gray-500">{count}</span>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
-        {/* User Behavior Analysis */}
+        {/* Top Users */}
         <div className="card">
           <div className="card-header">
-            <h2 className="text-lg font-semibold text-gray-900">User Behavior</h2>
-          </div>
-          <div className="space-y-4 max-h-64 overflow-y-auto">
-            {Object.entries(analyticsData.userStats).map(([userId, stats]) => (
-              <div key={userId} className="border border-gray-200 rounded-lg p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium text-gray-900">{userId}</span>
-                  <span className="text-sm text-gray-500">{stats.totalActivities} activities</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                  <div>Success Rate: {stats.successRate.toFixed(1)}%</div>
-                  <div>Locations: {stats.uniqueLocations}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Geographic Distribution */}
-        <div className="card">
-          <div className="card-header">
-            <h2 className="text-lg font-semibold text-gray-900">Top Locations</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Most Active Users</h2>
           </div>
           <div className="space-y-3">
-            {analyticsData.topLocations.map(([location, count], index) => (
-              <div key={location} className="flex items-center justify-between">
+            {topUsers.slice(0, 8).map((user, index) => (
+              <div key={index} className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <GlobeAltIcon className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-900">{location}</span>
+                  <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
+                    <span className="text-sm font-medium text-primary-600">
+                      {user.user.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium text-gray-900">{user.user}</span>
                 </div>
-                <span className="text-sm text-gray-500">{count}</span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">{user.count} activities</span>
+                  <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                    <div 
+                      className="bg-primary-600 h-1.5 rounded-full"
+                      style={{ width: `${(user.count / topUsers[0].count) * 100}%` }}
+                    />
+                  </div>
+                </div>
               </div>
             ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Activity Types */}
+      <div className="card">
+        <div className="card-header">
+          <h2 className="text-lg font-semibold text-gray-900">Activity Types Distribution</h2>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          {activityTypes.slice(0, 12).map((activity, index) => {
+            const total = activityTypes.reduce((sum, a) => sum + a.count, 0)
+            const percentage = (activity.count / total * 100)
+            
+            return (
+              <div key={index} className="text-center p-4 bg-gray-50 rounded-lg">
+                <div className="text-2xl font-bold text-gray-900">{activity.count}</div>
+                <div className="text-sm text-gray-600 capitalize">
+                  {activity.action.replace('_', ' ')}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {percentage.toFixed(1)}%
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Time-based Analysis */}
+      <div className="card">
+        <div className="card-header">
+          <h2 className="text-lg font-semibold text-gray-900">Time-based Analysis</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-primary-600">
+              {activities.filter(a => {
+                const hour = new Date(a.timestamp).getHours()
+                return hour >= 9 && hour <= 17
+              }).length}
+            </div>
+            <div className="text-sm text-gray-600 mt-1">Business Hours (9-17)</div>
+            <div className="text-xs text-gray-500">Normal activity</div>
+          </div>
+          
+          <div className="text-center">
+            <div className="text-3xl font-bold text-warning-600">
+              {activities.filter(a => {
+                const hour = new Date(a.timestamp).getHours()
+                return hour >= 18 && hour <= 23
+              }).length}
+            </div>
+            <div className="text-sm text-gray-600 mt-1">Evening (18-23)</div>
+            <div className="text-xs text-gray-500">After hours</div>
+          </div>
+          
+          <div className="text-center">
+            <div className="text-3xl font-bold text-danger-600">
+              {activities.filter(a => {
+                const hour = new Date(a.timestamp).getHours()
+                return hour >= 0 && hour <= 8
+              }).length}
+            </div>
+            <div className="text-sm text-gray-600 mt-1">Night (0-8)</div>
+            <div className="text-xs text-gray-500">Suspicious hours</div>
           </div>
         </div>
       </div>

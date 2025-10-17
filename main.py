@@ -6,6 +6,7 @@ Main application entry point for the AI-driven security monitoring system.
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from contextlib import asynccontextmanager
 import uvicorn
 import asyncio
 import json
@@ -22,29 +23,13 @@ from websocket_manager import ConnectionManager
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize FastAPI app
-app = FastAPI(
-    title="Third Umpire - AI Guard Dog",
-    description="Real-time suspicious activity detection system",
-    version="1.0.0"
-)
-
-# Add CORS middleware for frontend communication
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # Initialize components
 db_manager = DatabaseManager()
 anomaly_detector = AnomalyDetector()
 websocket_manager = ConnectionManager()
 
-@app.on_event("startup")
-async def startup_event():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     """Initialize the system on startup"""
     logger.info("🐕 Third Umpire - AI Guard Dog starting up...")
     
@@ -55,6 +40,25 @@ async def startup_event():
     await anomaly_detector.train_model()
     
     logger.info("✅ System initialized successfully!")
+    yield
+    # Cleanup code here if needed
+
+# Initialize FastAPI app
+app = FastAPI(
+    title="Third Umpire - AI Guard Dog",
+    description="Real-time suspicious activity detection system",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# Add CORS middleware for frontend communication
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 async def root():
@@ -130,7 +134,7 @@ async def get_recent_activities(limit: int = 100):
 async def get_dashboard_stats():
     """Get dashboard statistics"""
     stats = await db_manager.get_dashboard_stats()
-    return stats
+    return stats.dict()
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -146,11 +150,19 @@ async def websocket_endpoint(websocket: WebSocket):
 @app.post("/api/demo/generate")
 async def generate_demo_data():
     """Generate demo data for testing"""
-    demo_activities = await db_manager.generate_demo_activities()
-    return {
-        "message": "Demo data generated",
-        "activities_created": len(demo_activities)
-    }
+    try:
+        demo_activities = db_manager.generate_demo_activities()
+        return {
+            "message": "Demo data generated",
+            "activities_created": len(demo_activities)
+        }
+    except Exception as e:
+        logger.error(f"Error generating demo data: {e}")
+        return {
+            "message": "Error generating demo data",
+            "error": str(e),
+            "activities_created": 0
+        }
 
 if __name__ == "__main__":
     uvicorn.run(

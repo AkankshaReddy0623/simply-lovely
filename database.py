@@ -32,14 +32,15 @@ class DatabaseManager:
             self.connection = sqlite3.connect(self.db_path)
             self.connection.row_factory = sqlite3.Row  # Enable dict-like access
             
-            await self._create_tables()
+            # Create tables synchronously since sqlite3 doesn't support async
+            self._create_tables()
             logger.info("✅ Database initialized successfully")
             
         except Exception as e:
             logger.error(f"Error initializing database: {e}")
             raise
     
-    async def _create_tables(self):
+    def _create_tables(self):
         """Create database tables"""
         cursor = self.connection.cursor()
         
@@ -123,6 +124,40 @@ class DatabaseManager:
     
     async def store_activity(self, activity: UserActivity):
         """Store user activity in database"""
+        try:
+            cursor = self.connection.cursor()
+            
+            cursor.execute("""
+                INSERT INTO user_activities (
+                    id, user_id, action, timestamp, location, ip_address,
+                    user_agent, user_role, success, failed_attempts,
+                    session_id, device_fingerprint, additional_data
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                activity.id,
+                activity.user_id,
+                activity.action.value,
+                activity.timestamp.isoformat(),
+                json.dumps(activity.location),
+                activity.ip_address,
+                activity.user_agent,
+                activity.user_role.value,
+                activity.success,
+                activity.failed_attempts,
+                activity.session_id,
+                activity.device_fingerprint,
+                json.dumps(activity.additional_data)
+            ))
+            
+            self.connection.commit()
+            logger.debug(f"Stored activity: {activity.id}")
+            
+        except Exception as e:
+            logger.error(f"Error storing activity: {e}")
+            raise
+    
+    def store_activity_sync(self, activity: UserActivity):
+        """Store user activity in database (synchronous version)"""
         try:
             cursor = self.connection.cursor()
             
@@ -312,7 +347,7 @@ class DatabaseManager:
             logger.error(f"Error getting dashboard stats: {e}")
             return DashboardStats()
     
-    async def generate_demo_activities(self) -> List[UserActivity]:
+    def generate_demo_activities(self) -> List[UserActivity]:
         """Generate demo activities for testing"""
         import random
         from datetime import datetime, timedelta
@@ -340,7 +375,7 @@ class DatabaseManager:
             )
             
             demo_activities.append(activity)
-            await self.store_activity(activity)
+            self.store_activity_sync(activity)
         
         # Generate some suspicious activities
         for i in range(10):
@@ -361,7 +396,7 @@ class DatabaseManager:
             )
             
             demo_activities.append(suspicious_activity)
-            await self.store_activity(suspicious_activity)
+            self.store_activity_sync(suspicious_activity)
         
         logger.info(f"Generated {len(demo_activities)} demo activities")
         return demo_activities

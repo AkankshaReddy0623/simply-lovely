@@ -9,7 +9,7 @@ const Layout = () => {
   const { isConnected } = useWebSocket()
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       {/* Sidebar */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       
@@ -22,8 +22,11 @@ const Layout = () => {
         />
         
         {/* Page content */}
-        <main className="p-6">
-          <Outlet />
+        <main className="p-6 relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/10 to-white/20 pointer-events-none rounded-2xl" />
+          <div className="relative z-10">
+            <Outlet />
+          </div>
         </main>
       </div>
       
@@ -33,7 +36,7 @@ const Layout = () => {
           className="fixed inset-0 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         >
-          <div className="absolute inset-0 bg-gray-600 opacity-75" />
+          <div className="absolute inset-0 bg-gray-900/75 backdrop-blur-sm" />
         </div>
       )}
     </div>

@@ -2,11 +2,10 @@ import React, { useState } from 'react'
 import { useWebSocket } from '../contexts/WebSocketContext'
 import { useQuery } from 'react-query'
 import { 
-  ActivityIcon,
+  ComputerDesktopIcon,
   FunnelIcon,
   MagnifyingGlassIcon,
   UserIcon,
-  ComputerDesktopIcon,
   GlobeAltIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline'
@@ -99,7 +98,7 @@ const Activities = () => {
         </div>
         <div className="flex items-center space-x-3">
           <button className="btn btn-secondary">
-            <ActivityIcon className="w-4 h-4 mr-2" />
+            <ComputerDesktopIcon className="w-4 h-4 mr-2" />
             Export Data
           </button>
         </div>
@@ -109,7 +108,7 @@ const Activities = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="stat-card">
           <div className="flex items-center">
-            <ActivityIcon className="w-5 h-5 text-primary-600 mr-3" />
+            <ComputerDesktopIcon className="w-5 h-5 text-primary-600 mr-3" />
             <div>
               <p className="text-sm text-gray-600">Total Activities</p>
               <p className="text-2xl font-semibold text-gray-900">{stats.total}</p>

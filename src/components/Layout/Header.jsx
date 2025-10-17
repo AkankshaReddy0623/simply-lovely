@@ -34,7 +34,7 @@ const Header = ({ onMenuClick, connectionStatus }) => {
   }
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200">
+    <header className="bg-white/80 backdrop-blur-sm shadow-lg border-b border-white/20">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Left side */}
@@ -50,7 +50,7 @@ const Header = ({ onMenuClick, connectionStatus }) => {
             
             {/* Connection status */}
             <div className="hidden sm:flex items-center ml-4 lg:ml-0">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 bg-white/50 rounded-full px-3 py-1 border border-white/30">
                 {getConnectionIcon()}
                 <span className={`text-sm font-medium ${getConnectionColor()}`}>
                   {getConnectionText()}
@@ -64,10 +64,10 @@ const Header = ({ onMenuClick, connectionStatus }) => {
             {/* Notifications */}
             <button
               type="button"
-              className="relative p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+              className="relative p-2 text-gray-400 hover:text-gray-500 hover:bg-white/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 transition-all duration-200"
             >
               <BellIcon className="w-6 h-6" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-danger-500 rounded-full"></span>
+              <span className="absolute top-1 right-1 w-2 h-2 bg-gradient-to-r from-danger-500 to-red-600 rounded-full animate-pulse"></span>
             </button>
 
             {/* User menu */}
@@ -82,7 +82,7 @@ const Header = ({ onMenuClick, connectionStatus }) => {
               </div>
               
               {/* Avatar */}
-              <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl flex items-center justify-center shadow-lg">
                 <span className="text-sm font-medium text-white">
                   {user?.name?.charAt(0) || 'A'}
                 </span>
@@ -91,7 +91,7 @@ const Header = ({ onMenuClick, connectionStatus }) => {
               {/* Logout button */}
               <button
                 onClick={logout}
-                className="text-sm text-gray-500 hover:text-gray-700 px-3 py-1 rounded-md hover:bg-gray-100 transition-colors"
+                className="text-sm text-gray-500 hover:text-gray-700 px-4 py-2 rounded-xl hover:bg-white/50 transition-all duration-200 border border-transparent hover:border-white/30"
               >
                 Logout
               </button>
