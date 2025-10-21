@@ -13,63 +13,59 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     // Check for existing authentication on app load
-    const checkAuth = async () => {
+    const token = localStorage.getItem('auth_token')
+    const userData = localStorage.getItem('user_data')
+    
+    if (token && userData) {
       try {
-        const token = localStorage.getItem('auth_token')
-        const userData = localStorage.getItem('user_data')
-        
-        if (token && userData) {
-          const parsedUser = JSON.parse(userData)
-          setUser(parsedUser)
-          setIsAuthenticated(true)
-        }
+        const parsedUser = JSON.parse(userData)
+        setUser(parsedUser)
+        setIsAuthenticated(true)
       } catch (error) {
-        console.error('Error checking authentication:', error)
-        // Clear invalid data
+        console.error('Error parsing user data:', error)
         localStorage.removeItem('auth_token')
         localStorage.removeItem('user_data')
-      } finally {
-        setIsLoading(false)
       }
     }
-
-    checkAuth()
+    
+    setIsLoading(false)
   }, [])
 
   const login = async (credentials) => {
     try {
       setIsLoading(true)
       
-      // Simulate API call - in real app, this would call your backend
+      // Simulate login API call
+      // In a real app, this would call your authentication endpoint
       await new Promise(resolve => setTimeout(resolve, 1000))
       
-      // Demo authentication - accept any credentials for demo purposes
-      const demoUser = {
-        id: 'admin_001',
+      // Demo mode - accept any credentials
+      const userData = {
+        id: 'admin',
         username: credentials.username || 'admin',
-        email: 'admin@thirdumpire.com',
+        email: 'admin@example.com',
         role: 'admin',
-        name: 'Security Administrator',
-        avatar: null,
-        lastLogin: new Date().toISOString()
+        name: 'Administrator',
+        avatar: '👤'
       }
       
-      // Store auth data
-      localStorage.setItem('auth_token', 'demo_token_12345')
-      localStorage.setItem('user_data', JSON.stringify(demoUser))
+      const token = 'demo_token_' + Date.now()
       
-      setUser(demoUser)
+      // Store authentication data
+      localStorage.setItem('auth_token', token)
+      localStorage.setItem('user_data', JSON.stringify(userData))
+      
+      setUser(userData)
       setIsAuthenticated(true)
       
-      toast.success(`Welcome back, ${demoUser.name}!`)
+      toast.success(`Welcome back, ${userData.name}!`)
       
-      return { success: true, user: demoUser }
-      
+      return { success: true }
     } catch (error) {
       console.error('Login error:', error)
       toast.error('Login failed. Please try again.')
@@ -79,50 +75,29 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  const logout = async () => {
-    try {
-      // Clear auth data
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('user_data')
-      
-      setUser(null)
-      setIsAuthenticated(false)
-      
-      toast.success('Logged out successfully')
-      
-    } catch (error) {
-      console.error('Logout error:', error)
-      toast.error('Error during logout')
-    }
+  const logout = () => {
+    // Clear authentication data
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('user_data')
+    
+    setUser(null)
+    setIsAuthenticated(false)
+    
+    toast.success('Logged out successfully')
   }
 
-  const updateProfile = async (updates) => {
-    try {
-      if (!user) return { success: false, error: 'No user logged in' }
-      
-      const updatedUser = { ...user, ...updates }
-      
-      localStorage.setItem('user_data', JSON.stringify(updatedUser))
-      setUser(updatedUser)
-      
-      toast.success('Profile updated successfully')
-      
-      return { success: true, user: updatedUser }
-      
-    } catch (error) {
-      console.error('Profile update error:', error)
-      toast.error('Failed to update profile')
-      return { success: false, error: error.message }
-    }
+  const updateUser = (userData) => {
+    setUser(prev => ({ ...prev, ...userData }))
+    localStorage.setItem('user_data', JSON.stringify({ ...user, ...userData }))
   }
 
   const value = {
     user,
-    isLoading,
     isAuthenticated,
+    isLoading,
     login,
     logout,
-    updateProfile
+    updateUser
   }
 
   return (

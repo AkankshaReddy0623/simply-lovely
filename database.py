@@ -32,14 +32,15 @@ class DatabaseManager:
             self.connection = sqlite3.connect(self.db_path)
             self.connection.row_factory = sqlite3.Row  # Enable dict-like access
             
-            await self._create_tables()
+            # Create tables synchronously since sqlite3 doesn't support async
+            self._create_tables()
             logger.info("✅ Database initialized successfully")
             
         except Exception as e:
             logger.error(f"Error initializing database: {e}")
             raise
     
-    async def _create_tables(self):
+    def _create_tables(self):
         """Create database tables"""
         cursor = self.connection.cursor()
         
@@ -141,6 +142,40 @@ class DatabaseManager:
                 activity.ip_address,
                 activity.user_agent,
                 activity.user_role.value,
+                activity.success,
+                activity.failed_attempts,
+                activity.session_id,
+                activity.device_fingerprint,
+                json.dumps(activity.additional_data)
+            ))
+            
+            self.connection.commit()
+            logger.debug(f"Stored activity: {activity.id}")
+            
+        except Exception as e:
+            logger.error(f"Error storing activity: {e}")
+            raise
+    
+    def store_activity_sync(self, activity: UserActivity):
+        """Store user activity in database (synchronous version)"""
+        try:
+            cursor = self.connection.cursor()
+            
+            cursor.execute("""
+                INSERT INTO user_activities (
+                    id, user_id, action, timestamp, location, ip_address,
+                    user_agent, user_role, success, failed_attempts,
+                    session_id, device_fingerprint, additional_data
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                activity.id,
+                activity.user_id,
+                activity.action,
+                activity.timestamp.isoformat(),
+                json.dumps(activity.location),
+                activity.ip_address,
+                activity.user_agent,
+                activity.user_role,
                 activity.success,
                 activity.failed_attempts,
                 activity.session_id,
@@ -312,7 +347,7 @@ class DatabaseManager:
             logger.error(f"Error getting dashboard stats: {e}")
             return DashboardStats()
     
-    async def generate_demo_activities(self) -> List[UserActivity]:
+    def generate_demo_activities(self) -> List[UserActivity]:
         """Generate demo activities for testing"""
         import random
         from datetime import datetime, timedelta
@@ -323,16 +358,17 @@ class DatabaseManager:
         
         for i in range(50):
             # Generate some normal activities
+            from models import ActionType, UserRole
             activity = UserActivity(
                 id=str(uuid.uuid4()),
                 user_id=random.choice(users),
-                action=random.choice(actions),
+                action=ActionType(random.choice(actions)),
                 timestamp=datetime.now() - timedelta(minutes=random.randint(0, 1440)),
                 location={'latitude': 40.7128 + random.uniform(-0.1, 0.1), 
                          'longitude': -74.0060 + random.uniform(-0.1, 0.1)},
                 ip_address=f"192.168.1.{random.randint(1, 255)}",
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                user_role='user' if 'admin' not in random.choice(users) else 'admin',
+                user_role=UserRole.USER if 'admin' not in random.choice(users) else UserRole.ADMIN,
                 success=random.choice([True, True, True, False]),  # Mostly successful
                 failed_attempts=random.randint(0, 2),
                 session_id=f"session_{random.randint(1000, 9999)}",
@@ -340,20 +376,21 @@ class DatabaseManager:
             )
             
             demo_activities.append(activity)
-            await self.store_activity(activity)
+            self.store_activity_sync(activity)
         
         # Generate some suspicious activities
+        suspicious_actions = ['privilege_escalation', 'mass_data_access', 'suspicious_download']
         for i in range(10):
             suspicious_activity = UserActivity(
                 id=str(uuid.uuid4()),
                 user_id=random.choice(users),
-                action=random.choice(['privilege_escalation', 'mass_data_access', 'suspicious_download']),
+                action=ActionType(random.choice(suspicious_actions)),
                 timestamp=datetime.now() - timedelta(minutes=random.randint(0, 60)),
                 location={'latitude': random.uniform(20, 50), 
                          'longitude': random.uniform(-120, -70)},
                 ip_address=f"10.0.0.{random.randint(1, 255)}",
                 user_agent="SuspiciousBot/1.0",
-                user_role='user',
+                user_role=UserRole.USER,
                 success=False,
                 failed_attempts=random.randint(3, 8),
                 session_id=f"suspicious_session_{random.randint(1000, 9999)}",
@@ -361,7 +398,7 @@ class DatabaseManager:
             )
             
             demo_activities.append(suspicious_activity)
-            await self.store_activity(suspicious_activity)
+            self.store_activity_sync(suspicious_activity)
         
         logger.info(f"Generated {len(demo_activities)} demo activities")
         return demo_activities

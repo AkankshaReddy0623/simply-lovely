@@ -26,7 +26,7 @@ export const WebSocketProvider = ({ children }) => {
   const connect = () => {
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      const wsUrl = `${protocol}//${window.location.hostname}:8000/ws`
+      const wsUrl = `${protocol}//localhost:8000/ws`
       
       ws.current = new WebSocket(wsUrl)
       

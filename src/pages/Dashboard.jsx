@@ -8,7 +8,8 @@ import {
   ChartBarIcon,
   GlobeAltIcon,
   EyeIcon,
-  LockClosedIcon
+  LockClosedIcon,
+  ComputerDesktopIcon
 } from '@heroicons/react/24/outline'
 import { useWebSocket } from '../contexts/WebSocketContext'
 import StatCard from '../components/Dashboard/StatCard'
@@ -135,7 +136,7 @@ const Dashboard = () => {
           value={stats?.total_activities || 0}
           change={activities.length}
           changeLabel="Recent"
-          icon={ActivityIcon}
+          icon={ComputerDesktopIcon}
           color="success"
           loading={statsLoading}
         />

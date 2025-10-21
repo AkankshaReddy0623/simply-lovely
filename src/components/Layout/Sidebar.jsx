@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom'
 import { 
   HomeIcon,
   ExclamationTriangleIcon,
-  ActivityIcon,
+  ComputerDesktopIcon,
   ChartBarIcon,
   Cog6ToothIcon,
   ShieldCheckIcon
@@ -26,7 +26,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       icon: ExclamationTriangleIcon,
       badge: activeAlertsCount > 0 ? activeAlertsCount : null
     },
-    { name: 'Activities', href: '/activities', icon: ActivityIcon },
+    { name: 'Activities', href: '/activities', icon: ComputerDesktopIcon },
     { name: 'Analytics', href: '/analytics', icon: ChartBarIcon },
     { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
   ]
@@ -36,10 +36,10 @@ const Sidebar = ({ isOpen, onClose }) => {
       to={item.href}
       onClick={onClose}
       className={({ isActive }) =>
-        `group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+        `group flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-300 ${
           isActive
-            ? 'bg-primary-100 text-primary-900 border-r-2 border-primary-600'
-            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+            ? 'bg-gradient-to-r from-primary-100 to-primary-50 text-primary-900 border-r-2 border-primary-600 shadow-lg'
+            : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-md'
         }`
       }
     >
@@ -63,9 +63,11 @@ const Sidebar = ({ isOpen, onClose }) => {
     <>
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex flex-col flex-grow bg-white border-r border-gray-200 pt-5 pb-4 overflow-y-auto">
+        <div className="flex flex-col flex-grow bg-white/90 backdrop-blur-sm border-r border-white/20 shadow-2xl pt-5 pb-4 overflow-y-auto">
           <div className="flex items-center flex-shrink-0 px-4">
-            <ShieldCheckIcon className="h-8 w-8 text-primary-600" />
+            <div className="w-10 h-10 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl flex items-center justify-center shadow-lg">
+              <ShieldCheckIcon className="h-6 w-6 text-white" />
+            </div>
             <div className="ml-3">
               <h1 className="text-xl font-bold text-gradient">Third Umpire</h1>
               <p className="text-xs text-gray-500">AI Guard Dog</p>

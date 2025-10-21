@@ -55,6 +55,8 @@ class UserActivity(BaseModel):
         json_encoders = {
             datetime: lambda v: v.isoformat()
         }
+        use_enum_values = True
+        from_attributes = True
 
 class Alert(BaseModel):
     """Model for security alerts"""
@@ -75,6 +77,8 @@ class Alert(BaseModel):
         json_encoders = {
             datetime: lambda v: v.isoformat()
         }
+        use_enum_values = True
+        from_attributes = True
 
 class SecurityEvent(BaseModel):
     """Model for broader security events"""
@@ -93,6 +97,8 @@ class SecurityEvent(BaseModel):
         json_encoders = {
             datetime: lambda v: v.isoformat()
         }
+        use_enum_values = True
+        from_attributes = True
 
 class UserBehaviorProfile(BaseModel):
     """Model for user behavioral analysis"""
@@ -126,6 +132,8 @@ class DashboardStats(BaseModel):
         json_encoders = {
             datetime: lambda v: v.isoformat()
         }
+        use_enum_values = True
+        from_attributes = True
 
 class InvestigationReport(BaseModel):
     """Model for security investigation reports"""
@@ -161,3 +169,5 @@ class SystemHealth(BaseModel):
         json_encoders = {
             datetime: lambda v: v.isoformat()
         }
+        use_enum_values = True
+        from_attributes = True
