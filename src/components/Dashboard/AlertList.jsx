@@ -8,9 +8,13 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   SparklesIcon,
-  EyeIcon
+  EyeIcon,
+  XMarkIcon,
+  CheckCircleIcon,
+  ClockIcon
 } from '@heroicons/react/24/outline'
-import { getAlertInsights } from '../../services/api'
+import { getAlertInsights, updateAlertStatus, dismissAlert } from '../../services/api'
+import toast from 'react-hot-toast'
 
 const AlertList = ({ alerts = [] }) => {
   const [expandedAlerts, setExpandedAlerts] = useState({})
@@ -42,6 +46,37 @@ const AlertList = ({ alerts = [] }) => {
       }))
     } finally {
       setLoadingInsights(prev => ({ ...prev, [alertId]: false }))
+    }
+  }
+
+  const handleDismissAlert = async (alertId) => {
+    try {
+      await dismissAlert(alertId)
+      toast.success('Alert dismissed successfully')
+      // Remove from local state or mark as dismissed
+    } catch (error) {
+      console.error('Failed to dismiss alert:', error)
+      toast.error('Failed to dismiss alert')
+    }
+  }
+
+  const handleResolveAlert = async (alertId) => {
+    try {
+      await updateAlertStatus(alertId, 'resolved', 'Alert resolved by security team')
+      toast.success('Alert resolved successfully')
+    } catch (error) {
+      console.error('Failed to resolve alert:', error)
+      toast.error('Failed to resolve alert')
+    }
+  }
+
+  const handleMarkAsFalsePositive = async (alertId) => {
+    try {
+      await updateAlertStatus(alertId, 'resolved', 'Marked as false positive', true)
+      toast.success('Alert marked as false positive')
+    } catch (error) {
+      console.error('Failed to mark as false positive:', error)
+      toast.error('Failed to mark as false positive')
     }
   }
   const getSeverityIcon = (severity) => {
@@ -241,6 +276,36 @@ const AlertList = ({ alerts = [] }) => {
                           </div>
                         </div>
                       )}
+                    </div>
+                    
+                    {/* Alert Action Buttons */}
+                    <div className="mt-4 pt-3 border-t border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium text-gray-900">Alert Actions</h4>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handleResolveAlert(alert.id || index)}
+                            className="inline-flex items-center px-3 py-1.5 rounded text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
+                          >
+                            <CheckCircleIcon className="w-3 h-3 mr-1" />
+                            Resolve
+                          </button>
+                          <button
+                            onClick={() => handleMarkAsFalsePositive(alert.id || index)}
+                            className="inline-flex items-center px-3 py-1.5 rounded text-xs font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition-colors"
+                          >
+                            <XMarkIcon className="w-3 h-3 mr-1" />
+                            False Positive
+                          </button>
+                          <button
+                            onClick={() => handleDismissAlert(alert.id || index)}
+                            className="inline-flex items-center px-3 py-1.5 rounded text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+                          >
+                            <XMarkIcon className="w-3 h-3 mr-1" />
+                            Dismiss
+                          </button>
+                        </div>
+                      </div>
                     </div>
                     
                     {/* Additional Alert Details */}

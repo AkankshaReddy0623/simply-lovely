@@ -115,7 +115,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Active Alerts"
-          value={stats?.active_alerts || 0}
+          value={alerts.length || stats?.active_alerts || 0}
           change={stats?.anomalies_detected_today || 0}
           changeLabel="Today"
           icon={ExclamationTriangleIcon}
@@ -133,7 +133,7 @@ const Dashboard = () => {
         />
         <StatCard
           title="Total Activities"
-          value={stats?.total_activities || 0}
+          value={activities.length || stats?.total_activities || 0}
           change={activities.length}
           changeLabel="Recent"
           icon={ComputerDesktopIcon}

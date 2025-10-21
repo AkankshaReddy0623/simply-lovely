@@ -27,6 +27,7 @@ import json
 from datetime import datetime
 from typing import List, Dict, Any
 import logging
+from pydantic import BaseModel
 
 from ai_engine import AnomalyDetector
 from models import UserActivity, Alert, SecurityEvent
@@ -68,7 +69,13 @@ app = FastAPI(
 # Add CORS middleware for frontend communication
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+        "http://localhost:3000"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -91,8 +98,34 @@ async def health_check():
         "status": "healthy",
         "anomaly_detector": "operational",
         "database": "connected",
-        "websockets": "active"
+        "websockets": "active",
+        "active_connections": websocket_manager.get_connection_count()
     }
+
+@app.get("/api/websocket/status")
+async def websocket_status():
+    """Get WebSocket connection status and info"""
+    return {
+        "active_connections": websocket_manager.get_connection_count(),
+        "connections": websocket_manager.get_connection_info()
+    }
+
+@app.post("/api/websocket/test")
+async def test_websocket_broadcast():
+    """Test WebSocket broadcasting"""
+    try:
+        test_message = {
+            "type": "test",
+            "data": {
+                "message": "WebSocket test broadcast",
+                "timestamp": datetime.now().isoformat()
+            }
+        }
+        await websocket_manager.broadcast_custom_event("test", test_message["data"])
+        return {"status": "success", "message": "Test broadcast sent"}
+    except Exception as e:
+        logger.error(f"Error testing WebSocket broadcast: {e}")
+        return {"status": "error", "message": str(e)}
 
 @app.post("/api/activities")
 async def log_activity(activity: UserActivity):
@@ -144,6 +177,19 @@ async def get_alerts(limit: int = 50):
     alerts = await db_manager.get_recent_alerts(limit)
     return {"alerts": [alert.dict() for alert in alerts]}
 
+@app.get("/api/analytics")
+async def get_analytics(time_period: str = "24h", range: str | None = None):
+    """Analytics summary used by frontend analytics page"""
+    # Support both `time_period` and legacy `range` query param from frontend
+    effective = range or time_period
+    summary = await db_manager.get_analytics_summary(effective)
+    return summary
+
+@app.get("/api/activities/user/{user_id}")
+async def get_user_activities(user_id: str, limit: int = 100):
+    activities = await db_manager.get_user_activities(user_id, limit)
+    return {"activities": [a.dict() for a in activities]}
+
 @app.get("/api/activities/recent")
 async def get_recent_activities(limit: int = 100):
     """Get recent user activities"""
@@ -162,9 +208,23 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket_manager.connect(websocket)
     try:
         while True:
-            # Keep connection alive
-            await websocket.receive_text()
+            try:
+                # Try to receive text message
+                data = await websocket.receive_text()
+                logger.info(f"Received WebSocket message: {data}")
+                await websocket_manager.handle_client_message(websocket, data)
+            except WebSocketDisconnect:
+                break
+            except Exception as e:
+                logger.error(f"Error receiving WebSocket message: {e}")
+                # Try to keep connection alive
+                await asyncio.sleep(0.1)
+                
     except WebSocketDisconnect:
+        logger.info("WebSocket disconnected")
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+    finally:
         websocket_manager.disconnect(websocket)
 
 @app.post("/api/demo/generate")
@@ -304,6 +364,73 @@ async def get_ai_status():
         }
     except Exception as e:
         logger.error(f"Error getting AI status: {e}")
+        return {"status": "error", "message": str(e)}
+
+# Alert Management Endpoints
+class UpdateAlertRequest(BaseModel):
+    status: str | None = None
+    investigation_notes: str | None = None
+    false_positive: bool | None = None
+
+@app.patch("/api/alerts/{alert_id}")
+async def update_alert(alert_id: str, body: UpdateAlertRequest):
+    """Update alert status and add investigation notes"""
+    try:
+        updated = await db_manager.update_alert(
+            alert_id,
+            status=body.status,
+            investigation_notes=body.investigation_notes,
+            false_positive=body.false_positive
+        )
+        if not updated:
+            return {"status": "error", "message": "Alert not found or not updated"}
+        return {"status": "success", "alert_id": alert_id}
+    except Exception as e:
+        logger.error(f"Error updating alert: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.delete("/api/alerts/{alert_id}")
+async def dismiss_alert(alert_id: str):
+    """Dismiss an alert"""
+    try:
+        ok = await db_manager.dismiss_alert(alert_id)
+        if not ok:
+            return {"status": "error", "message": "Alert not found"}
+        return {"status": "success", "alert_id": alert_id}
+    except Exception as e:
+        logger.error(f"Error dismissing alert: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/alerts/{alert_id}")
+async def get_alert_details(alert_id: str):
+    """Get detailed information about a specific alert"""
+    try:
+        alert = await db_manager.get_alert_by_id(alert_id)
+        if not alert:
+            return {"status": "error", "message": "Alert not found"}
+        return {"status": "success", "alert": alert.dict()}
+    except Exception as e:
+        logger.error(f"Error getting alert details: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/settings")
+async def get_settings():
+    try:
+        settings = await db_manager.get_system_settings()
+        return settings
+    except Exception as e:
+        logger.error(f"Error getting settings: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.put("/api/settings")
+async def put_settings(settings: Dict[str, Any]):
+    try:
+        ok = await db_manager.update_system_settings(settings)
+        if not ok:
+            return {"status": "error", "message": "Failed to save settings"}
+        return {"status": "success"}
+    except Exception as e:
+        logger.error(f"Error updating settings: {e}")
         return {"status": "error", "message": str(e)}
 
 if __name__ == "__main__":

@@ -136,11 +136,14 @@ class ConnectionManager:
     async def handle_client_message(self, websocket: WebSocket, message: str):
         """Handle incoming messages from clients"""
         try:
+            logger.info(f"Handling WebSocket message: {message}")
             data = json.loads(message)
             message_type = data.get('type')
+            logger.info(f"Message type: {message_type}")
             
             if message_type == 'ping':
                 # Respond to ping with pong
+                logger.info("Responding to ping with pong")
                 await self.send_to_client(websocket, {'type': 'pong', 'timestamp': datetime.now().isoformat()})
             
             elif message_type == 'subscribe':
@@ -154,9 +157,10 @@ class ConnectionManager:
                 client_info = data.get('data', {})
                 if websocket in self.connection_metadata:
                     self.connection_metadata[websocket].update(client_info)
+                logger.info(f"Updated client info: {client_info}")
             
-        except json.JSONDecodeError:
-            logger.warning(f"Invalid JSON message from client: {message}")
+        except json.JSONDecodeError as e:
+            logger.warning(f"Invalid JSON message from client: {message}, error: {e}")
         except Exception as e:
             logger.error(f"Error handling client message: {e}")
     

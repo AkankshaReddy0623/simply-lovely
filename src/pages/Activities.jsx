@@ -7,7 +7,8 @@ import {
   MagnifyingGlassIcon,
   UserIcon,
   GlobeAltIcon,
-  XMarkIcon
+  XMarkIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline'
 import ActivityFeed from '../components/Dashboard/ActivityFeed'
 import { fetchRecentActivities } from '../services/api'

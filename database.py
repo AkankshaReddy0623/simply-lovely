@@ -478,9 +478,9 @@ class DatabaseManager:
                 description=row['description'],
                 anomaly_score=row['anomaly_score'],
                 timestamp=datetime.fromisoformat(row['timestamp']),
-                status=row.get('status', 'active'),
-                investigation_notes=row.get('investigation_notes', ''),
-                false_positive=bool(row.get('false_positive', False))
+                status=row['status'],
+                investigation_notes=row['investigation_notes'],
+                false_positive=bool(row['false_positive'])
             )
             
             return alert
@@ -488,6 +488,119 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Error getting alert by ID: {e}")
             return None
+
+    async def update_alert(self, alert_id: str, *, status: Optional[str] = None, investigation_notes: Optional[str] = None, false_positive: Optional[bool] = None) -> bool:
+        """Update an alert's fields in the database."""
+        try:
+            cursor = self.connection.cursor()
+            updates = []
+            params: list[Any] = []
+            if status is not None:
+                updates.append("status = ?")
+                params.append(status)
+            if investigation_notes is not None:
+                updates.append("investigation_notes = ?")
+                params.append(investigation_notes)
+            if false_positive is not None:
+                updates.append("false_positive = ?")
+                params.append(1 if false_positive else 0)
+            if not updates:
+                return True
+            params.append(alert_id)
+            cursor.execute(f"UPDATE alerts SET {', '.join(updates)} WHERE id = ?", params)
+            self.connection.commit()
+            return cursor.rowcount > 0
+        except Exception as e:
+            logger.error(f"Error updating alert {alert_id}: {e}")
+            return False
+
+    async def dismiss_alert(self, alert_id: str) -> bool:
+        """Dismiss an alert (mark resolved)."""
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute("UPDATE alerts SET status = 'resolved' WHERE id = ?", (alert_id,))
+            self.connection.commit()
+            return cursor.rowcount > 0
+        except Exception as e:
+            logger.error(f"Error dismissing alert {alert_id}: {e}")
+            return False
+
+    async def get_analytics_summary(self, time_range: str = "24h") -> Dict[str, Any]:
+        """Compute a simple analytics summary from activities and alerts."""
+        try:
+            cursor = self.connection.cursor()
+            # Time window
+            now = datetime.now()
+            if time_range.endswith('h'):
+                hours = int(time_range[:-1])
+                since = now - timedelta(hours=hours)
+            elif time_range.endswith('d'):
+                days = int(time_range[:-1])
+                since = now - timedelta(days=days)
+            else:
+                since = now - timedelta(hours=24)
+
+            # Counts
+            cursor.execute("SELECT COUNT(*) AS c FROM alerts WHERE timestamp >= ?", (since.isoformat(),))
+            alerts_count = cursor.fetchone()[0]
+            cursor.execute("SELECT severity, COUNT(*) AS c FROM alerts WHERE timestamp >= ? GROUP BY severity", (since.isoformat(),))
+            severities = {row[0]: row[1] for row in cursor.fetchall()}
+            cursor.execute("SELECT COUNT(*) AS c FROM user_activities WHERE timestamp >= ?", (since.isoformat(),))
+            activities_count = cursor.fetchone()[0]
+            cursor.execute("SELECT user_id, COUNT(*) AS c FROM user_activities WHERE timestamp >= ? GROUP BY user_id ORDER BY c DESC LIMIT 10", (since.isoformat(),))
+            top_users = [{"user": row[0], "count": row[1]} for row in cursor.fetchall()]
+            cursor.execute("SELECT action, COUNT(*) AS c FROM user_activities WHERE timestamp >= ? GROUP BY action ORDER BY c DESC", (since.isoformat(),))
+            activity_types = [{"action": row[0], "count": row[1]} for row in cursor.fetchall()]
+
+            return {
+                "time_range": time_range,
+                "alerts_count": alerts_count,
+                "activities_count": activities_count,
+                "severity_distribution": severities,
+                "top_users": top_users,
+                "activity_types": activity_types,
+            }
+        except Exception as e:
+            logger.error(f"Error computing analytics: {e}")
+            return {
+                "time_range": time_range,
+                "alerts_count": 0,
+                "activities_count": 0,
+                "severity_distribution": {},
+                "top_users": [],
+                "activity_types": [],
+            }
+
+    async def get_system_settings(self) -> Dict[str, Any]:
+        """Return basic system settings (stored in a simple table)."""
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)")
+            cursor.execute("SELECT value FROM settings WHERE key = 'system'")
+            row = cursor.fetchone()
+            if row and row[0]:
+                return json.loads(row[0])
+            # Defaults
+            return {
+                "alert_auto_resolve": False,
+                "retention_days": 30,
+                "websocket_broadcast": True,
+            }
+        except Exception as e:
+            logger.error(f"Error loading settings: {e}")
+            return {"alert_auto_resolve": False, "retention_days": 30, "websocket_broadcast": True}
+
+    async def update_system_settings(self, settings: Dict[str, Any]) -> bool:
+        """Persist system settings JSON."""
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)")
+            cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('system', ?)", (json.dumps(settings),))
+            self.connection.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Error saving settings: {e}")
+            return False
     
     async def close(self):
         """Close database connection"""
