@@ -1,0 +1,233 @@
+/* API Documentation Styles */
+
+.api-endpoint-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.api-endpoint-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--accent-primary);
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
+}
+
+.api-endpoint-card:hover::before {
+  transform: scaleY(1);
+}
+
+.api-endpoint-card:hover {
+  background: var(--bg-secondary);
+  border-color: var(--border-glow);
+  box-shadow: var(--shadow-md);
+  transform: translateX(5px);
+}
+
+.api-endpoint-card.selected {
+  background: var(--bg-secondary);
+  border-color: var(--accent-primary);
+  box-shadow: var(--shadow-glow-blue);
+}
+
+.api-endpoint-card.selected::before {
+  transform: scaleY(1);
+  background: var(--accent-primary);
+}
+
+/* Method Badge Animations */
+.method-badge {
+  position: relative;
+  overflow: hidden;
+}
+
+.method-badge::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.api-endpoint-card:hover .method-badge::after {
+  left: 100%;
+}
+
+/* Response Animation */
+.response-container {
+  animation: slideInUp 0.6s ease-out;
+}
+
+/* Code Block Styling */
+pre {
+  position: relative;
+}
+
+pre::before {
+  content: 'JSON Response';
+  position: absolute;
+  top: -8px;
+  right: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+}
+
+/* Status Indicator Pulse */
+.status-indicator {
+  position: relative;
+}
+
+.status-indicator.success::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--safe-green);
+  opacity: 0.3;
+  transform: translate(-50%, -50%);
+  animation: pulse 2s infinite;
+}
+
+.status-indicator.error::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--danger-red);
+  opacity: 0.3;
+  transform: translate(-50%, -50%);
+  animation: pulse 2s infinite;
+}
+
+/* Loading Animation for Test Button */
+.test-button-loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.test-button-loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Endpoint Card Hover Effects */
+.api-endpoint-card {
+  position: relative;
+}
+
+.api-endpoint-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.api-endpoint-card:hover::after {
+  opacity: 1;
+}
+
+/* Response Status Colors */
+.response-success {
+  border-left: 4px solid var(--safe-green);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
+}
+
+.response-error {
+  border-left: 4px solid var(--danger-red);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1));
+}
+
+.response-warning {
+  border-left: 4px solid var(--warning-yellow);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.1));
+}
+
+/* Method-specific colors */
+.method-get { background: var(--safe-green); }
+.method-post { background: var(--warning-yellow); }
+.method-put { background: var(--info-blue); }
+.method-delete { background: var(--danger-red); }
+.method-ws { background: var(--accent-glow); }
+
+/* Scrollbar Styling */
+nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+nav::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+nav::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+nav::-webkit-scrollbar-thumb:hover {
+  background: var(--border-glow);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .api-endpoint-card {
+    padding: 0.75rem;
+  }
+  
+  .api-endpoint-card h3 {
+    font-size: 0.8rem;
+  }
+  
+  .api-endpoint-card p {
+    font-size: 0.7rem;
+  }
+}
+
+/* Animation Delays for Staggered Effects */
+.api-endpoint-card:nth-child(1) { animation-delay: 0.1s; }
+.api-endpoint-card:nth-child(2) { animation-delay: 0.2s; }
+.api-endpoint-card:nth-child(3) { animation-delay: 0.3s; }
+.api-endpoint-card:nth-child(4) { animation-delay: 0.4s; }
+.api-endpoint-card:nth-child(5) { animation-delay: 0.5s; }
+.api-endpoint-card:nth-child(6) { animation-delay: 0.6s; }
+.api-endpoint-card:nth-child(7) { animation-delay: 0.7s; }
