@@ -117,4 +117,35 @@ export const fetchSystemSettings = async () => {
   return response
 }
 
+// Gemini AI-powered API endpoints
+export const analyzeActivityWithAI = async (activity) => {
+  const response = await api.post('/ai/analyze-activity', activity)
+  return response
+}
+
+export const getAlertInsights = async (alertId) => {
+  const response = await api.get(`/ai/alert-insights/${alertId}`)
+  return response
+}
+
+export const getUserAIProfile = async (userId, limit = 100) => {
+  const response = await api.get(`/ai/user-profile/${userId}?limit=${limit}`)
+  return response
+}
+
+export const generateSecurityReport = async (timePeriod = '24h') => {
+  const response = await api.get(`/ai/security-report?time_period=${timePeriod}`)
+  return response
+}
+
+export const getThreatIntelligence = async () => {
+  const response = await api.get('/ai/threat-intelligence')
+  return response
+}
+
+export const getAIStatus = async () => {
+  const response = await api.get('/ai/status')
+  return response
+}
+
 export default api

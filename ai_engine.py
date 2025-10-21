@@ -1,6 +1,7 @@
 """
 AI Engine for Third Umpire - Anomaly Detection System
 This module contains the machine learning algorithms for detecting suspicious user behavior.
+Enhanced with Gemini AI for advanced threat analysis and natural language explanations.
 """
 
 import numpy as np
@@ -12,6 +13,7 @@ from datetime import datetime, timedelta
 import logging
 from typing import Dict, List, Any, Tuple
 import asyncio
+from gemini_service import GeminiAIService
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +32,9 @@ class AnomalyDetector:
         self.scaler = StandardScaler()
         self.dbscan = DBSCAN(eps=0.5, min_samples=5)
         self.is_trained = False
+        
+        # Initialize Gemini AI service
+        self.gemini_service = GeminiAIService()
         
         # Behavioral patterns to monitor
         self.suspicious_patterns = {
@@ -281,3 +286,115 @@ class AnomalyDetector:
             'session_duration': duration if len(session_activities) > 1 else 0,
             'action_count': len(actions)
         }
+    
+    async def enhanced_detect_anomaly(self, activity: 'UserActivity') -> Dict[str, Any]:
+        """
+        Enhanced anomaly detection using both traditional ML and Gemini AI
+        Returns comprehensive analysis with natural language explanations
+        """
+        try:
+            # Get traditional ML anomaly score
+            ml_score = await self.detect_anomaly(activity)
+            
+            # Prepare activity data for Gemini analysis
+            activity_data = {
+                'user_id': activity.user_id,
+                'action': activity.action,
+                'timestamp': activity.timestamp.isoformat(),
+                'location': activity.location,
+                'user_role': activity.user_role,
+                'success': activity.success,
+                'failed_attempts': activity.failed_attempts,
+                'device_info': getattr(activity, 'device_info', {}),
+                'session_info': getattr(activity, 'session_info', {})
+            }
+            
+            # Get Gemini AI analysis
+            gemini_analysis = await self.gemini_service.analyze_threat_intelligence(activity_data)
+            
+            # Combine ML and AI insights
+            combined_score = (ml_score * 0.4) + (gemini_analysis.get('risk_score', 50) / 100 * 0.6)
+            
+            return {
+                'ml_anomaly_score': ml_score,
+                'gemini_analysis': gemini_analysis,
+                'combined_risk_score': combined_score,
+                'threat_level': gemini_analysis.get('threat_level', 'MEDIUM'),
+                'explanation': gemini_analysis.get('explanation', 'Analysis in progress'),
+                'recommendations': gemini_analysis.get('recommendations', ['Manual review recommended']),
+                'indicators': gemini_analysis.get('indicators', []),
+                'timestamp': datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in enhanced anomaly detection: {e}")
+            # Fallback to traditional detection
+            ml_score = await self.detect_anomaly(activity)
+            return {
+                'ml_anomaly_score': ml_score,
+                'gemini_analysis': {'error': str(e)},
+                'combined_risk_score': ml_score,
+                'threat_level': 'UNKNOWN',
+                'explanation': f'Enhanced analysis failed: {str(e)}',
+                'recommendations': ['Manual review recommended'],
+                'indicators': ['Analysis error'],
+                'timestamp': datetime.now().isoformat()
+            }
+    
+    async def generate_alert_insights(self, alert_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate comprehensive insights for security alerts using Gemini AI
+        """
+        try:
+            insights = await self.gemini_service.generate_alert_explanation(alert_data)
+            return insights
+        except Exception as e:
+            logger.error(f"Error generating alert insights: {e}")
+            return {
+                'explanation': f'Alert analysis failed: {str(e)}',
+                'alert_id': alert_data.get('id'),
+                'error': str(e)
+            }
+    
+    async def analyze_user_profile(self, user_id: str, activities: List['UserActivity']) -> Dict[str, Any]:
+        """
+        Analyze user behavior profile using Gemini AI for advanced insights
+        """
+        try:
+            # Convert activities to dict format for Gemini
+            activities_data = []
+            for activity in activities:
+                activities_data.append({
+                    'user_id': activity.user_id,
+                    'action': activity.action,
+                    'timestamp': activity.timestamp.isoformat(),
+                    'location': activity.location,
+                    'user_role': activity.user_role,
+                    'success': activity.success,
+                    'failed_attempts': activity.failed_attempts
+                })
+            
+            # Get Gemini behavior analysis
+            behavior_analysis = await self.gemini_service.analyze_user_behavior_pattern(activities_data)
+            
+            # Combine with traditional user profile
+            traditional_profile = await self.get_user_behavior_profile(user_id)
+            
+            return {
+                'user_id': user_id,
+                'traditional_profile': traditional_profile,
+                'gemini_analysis': behavior_analysis,
+                'analysis_timestamp': datetime.now().isoformat(),
+                'activities_analyzed': len(activities)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error analyzing user profile: {e}")
+            traditional_profile = await self.get_user_behavior_profile(user_id)
+            return {
+                'user_id': user_id,
+                'traditional_profile': traditional_profile,
+                'gemini_analysis': {'error': str(e)},
+                'analysis_timestamp': datetime.now().isoformat(),
+                'activities_analyzed': len(activities)
+            }

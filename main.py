@@ -87,31 +87,37 @@ async def log_activity(activity: UserActivity):
         # Store activity in database
         await db_manager.store_activity(activity)
         
-        # Analyze for anomalies
-        anomaly_score = await anomaly_detector.detect_anomaly(activity)
+        # Use enhanced anomaly detection with Gemini AI
+        enhanced_analysis = await anomaly_detector.enhanced_detect_anomaly(activity)
+        combined_score = enhanced_analysis.get('combined_risk_score', 0.0)
         
-        # If anomaly detected, create alert
-        if anomaly_score > 0.7:  # Threshold for suspicious activity
+        # If anomaly detected, create alert with Gemini insights
+        if combined_score > 0.7:  # Threshold for suspicious activity
             alert = Alert(
                 activity_id=activity.id,
                 user_id=activity.user_id,
-                severity="high" if anomaly_score > 0.9 else "medium",
-                anomaly_score=anomaly_score,
+                severity="high" if combined_score > 0.9 else "medium",
+                anomaly_score=combined_score,
                 description=f"Suspicious activity detected: {activity.action}",
                 timestamp=datetime.now()
             )
             
             await db_manager.store_alert(alert)
             
-            # Broadcast alert to connected clients
-            await websocket_manager.broadcast_alert(alert.dict())
+            # Generate AI-powered alert insights
+            alert_insights = await anomaly_detector.generate_alert_insights(alert.dict())
             
-            logger.warning(f"🚨 Alert generated: {alert.description}")
+            # Broadcast alert with insights to connected clients
+            alert_data = alert.dict()
+            alert_data['ai_insights'] = alert_insights
+            await websocket_manager.broadcast_alert(alert_data)
+            
+            logger.warning(f"🚨 Enhanced alert generated: {alert.description}")
         
         return {
             "status": "logged",
-            "anomaly_score": anomaly_score,
-            "alert_generated": anomaly_score > 0.7
+            "enhanced_analysis": enhanced_analysis,
+            "alert_generated": combined_score > 0.7
         }
         
     except Exception as e:
@@ -163,6 +169,128 @@ async def generate_demo_data():
             "error": str(e),
             "activities_created": 0
         }
+
+# New Gemini AI-powered endpoints
+
+@app.post("/api/ai/analyze-activity")
+async def analyze_activity_with_ai(activity: UserActivity):
+    """Analyze user activity using enhanced AI (Gemini + ML)"""
+    try:
+        enhanced_analysis = await anomaly_detector.enhanced_detect_anomaly(activity)
+        return {
+            "status": "success",
+            "analysis": enhanced_analysis
+        }
+    except Exception as e:
+        logger.error(f"Error in AI activity analysis: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/ai/alert-insights/{alert_id}")
+async def get_alert_insights(alert_id: str):
+    """Get AI-powered insights for a specific alert"""
+    try:
+        alert = await db_manager.get_alert_by_id(alert_id)
+        if not alert:
+            return {"status": "error", "message": "Alert not found"}
+        
+        insights = await anomaly_detector.generate_alert_insights(alert.dict())
+        return {
+            "status": "success",
+            "alert_id": alert_id,
+            "insights": insights
+        }
+    except Exception as e:
+        logger.error(f"Error getting alert insights: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/ai/user-profile/{user_id}")
+async def get_user_ai_profile(user_id: str, limit: int = 100):
+    """Get AI-powered user behavior profile"""
+    try:
+        activities = await db_manager.get_user_activities(user_id, limit)
+        profile_analysis = await anomaly_detector.analyze_user_profile(user_id, activities)
+        return {
+            "status": "success",
+            "user_id": user_id,
+            "profile": profile_analysis
+        }
+    except Exception as e:
+        logger.error(f"Error getting user AI profile: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/ai/security-report")
+async def generate_security_report(time_period: str = "24h"):
+    """Generate AI-powered security report"""
+    try:
+        report = await anomaly_detector.gemini_service.generate_security_report(time_period)
+        return {
+            "status": "success",
+            "report": report
+        }
+    except Exception as e:
+        logger.error(f"Error generating security report: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/ai/threat-intelligence")
+async def get_threat_intelligence():
+    """Get current threat intelligence analysis"""
+    try:
+        # Get recent high-risk activities
+        alerts = await db_manager.get_recent_alerts(limit=20)
+        high_risk_alerts = [alert for alert in alerts if alert.anomaly_score > 0.8]
+        
+        if not high_risk_alerts:
+            return {
+                "status": "success",
+                "threat_level": "LOW",
+                "summary": "No high-risk threats detected in recent activity",
+                "recommendations": ["Continue monitoring", "Maintain current security posture"]
+            }
+        
+        # Analyze threat patterns
+        threat_analysis = {
+            "status": "success",
+            "threat_level": "HIGH" if any(a.anomaly_score > 0.9 for a in high_risk_alerts) else "MEDIUM",
+            "alert_count": len(high_risk_alerts),
+            "recent_alerts": [alert.dict() for alert in high_risk_alerts[:5]],
+            "summary": f"Detected {len(high_risk_alerts)} high-risk alerts requiring attention",
+            "recommendations": [
+                "Review high-priority alerts immediately",
+                "Investigate user behavior patterns",
+                "Consider enhanced monitoring for affected users"
+            ]
+        }
+        
+        return threat_analysis
+        
+    except Exception as e:
+        logger.error(f"Error getting threat intelligence: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/ai/status")
+async def get_ai_status():
+    """Get AI service status and capabilities"""
+    try:
+        gemini_enabled = anomaly_detector.gemini_service.enabled
+        return {
+            "status": "success",
+            "ai_services": {
+                "traditional_ml": "operational",
+                "gemini_ai": "operational" if gemini_enabled else "unavailable",
+                "enhanced_analysis": "available" if gemini_enabled else "limited"
+            },
+            "capabilities": [
+                "Anomaly detection",
+                "Behavioral analysis",
+                "Threat intelligence" if gemini_enabled else None,
+                "Natural language explanations" if gemini_enabled else None,
+                "Security reporting" if gemini_enabled else None
+            ],
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting AI status: {e}")
+        return {"status": "error", "message": str(e)}
 
 if __name__ == "__main__":
     uvicorn.run(

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { Toaster } from 'react-hot-toast'
 import ApiDocs from './pages/ApiDocs'
+import AIInsights from './pages/AIInsights'
 import './index.css'
 
 // Create a client
@@ -271,6 +272,7 @@ const Dashboard = () => {
     { id: 'alerts', name: 'Alerts', icon: '⚠️' },
     { id: 'activities', name: 'Activities', icon: '💻' },
     { id: 'analytics', name: 'Analytics', icon: '📊' },
+    { id: 'ai-insights', name: 'AI Insights', icon: '🤖' },
     { id: 'api-docs', name: 'API Docs', icon: '📚' }
   ]
 
@@ -815,6 +817,12 @@ const Dashboard = () => {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {currentView === 'ai-insights' && (
+            <div style={{ animation: 'fadeIn 0.6s ease-out' }}>
+              <AIInsights />
             </div>
           )}
 

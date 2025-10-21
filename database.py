@@ -442,6 +442,39 @@ class DatabaseManager:
             logger.error(f"Error getting user activities: {e}")
             return []
     
+    async def get_alert_by_id(self, alert_id: str) -> Optional[Alert]:
+        """Get a specific alert by ID"""
+        try:
+            cursor = self.connection.cursor()
+            
+            cursor.execute("""
+                SELECT * FROM alerts 
+                WHERE id = ?
+            """, (alert_id,))
+            
+            row = cursor.fetchone()
+            if not row:
+                return None
+            
+            alert = Alert(
+                id=row['id'],
+                activity_id=row['activity_id'],
+                user_id=row['user_id'],
+                severity=row['severity'],
+                description=row['description'],
+                anomaly_score=row['anomaly_score'],
+                timestamp=datetime.fromisoformat(row['timestamp']),
+                status=row.get('status', 'active'),
+                investigation_notes=row.get('investigation_notes', ''),
+                false_positive=bool(row.get('false_positive', False))
+            )
+            
+            return alert
+            
+        except Exception as e:
+            logger.error(f"Error getting alert by ID: {e}")
+            return None
+    
     async def close(self):
         """Close database connection"""
         if self.connection:
