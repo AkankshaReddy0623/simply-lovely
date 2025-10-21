@@ -1,6 +1,18 @@
 """
 WebSocket Manager for Third Umpire - AI Guard Dog System
 Handles real-time communication between backend and frontend for live monitoring.
+
+Features:
+- Real-time alert broadcasting
+- Connection management and cleanup
+- JSON message handling
+- Error handling and logging
+
+The WebSocket manager enables real-time updates to the frontend
+when new security alerts are generated or when AI analysis completes.
+
+Author: Third Umpire Team
+Version: 2.0.0 (Enhanced with Gemini AI)
 """
 
 import json

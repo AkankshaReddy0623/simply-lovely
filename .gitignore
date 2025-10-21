@@ -1,3 +1,4 @@
+#Simply Lovely!
 # Logs
 logs
 *.log
@@ -82,6 +83,22 @@ out
 .nuxt
 dist
 .output
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Node / React
+node_modules/
+dist/
+build/
+
+# Environment files
+.env
+
+# OS
+.DS_Store
+Thumbs.db
 
 # Gatsby files
 .cache/

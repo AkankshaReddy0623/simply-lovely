@@ -121,11 +121,11 @@ const AlertList = ({ alerts = [] }) => {
                     {alert.user_id}
                   </p>
                   {getSeverityBadge(alert.severity)}
-                  {/* AI Insights Indicator */}
+                  {/* Enhanced AI Insights Indicator */}
                   {alert.ai_insights && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                      <SparklesIcon className="w-3 h-3 mr-1" />
-                      AI
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 border border-purple-200 shadow-sm">
+                      <SparklesIcon className="w-3 h-3 mr-1 text-purple-600" />
+                      AI Enhanced
                     </span>
                   )}
                 </div>

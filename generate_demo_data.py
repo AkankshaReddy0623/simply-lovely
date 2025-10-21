@@ -200,7 +200,7 @@ def generate_demo_data():
     
     conn.commit()
     conn.close()
-    
+    #Simply lovely!
     print("Generated 60 demo activities and alerts")
     print("Demo data generation complete!")
 

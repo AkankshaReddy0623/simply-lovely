@@ -1,3 +1,19 @@
+/**
+ * Third Umpire - AI Guard Dog System - Main Application
+ * 
+ * Enhanced security monitoring system with AI-powered threat detection.
+ * Features real-time monitoring, enhanced alerts, and AI insights dashboard.
+ * 
+ * Components:
+ * - Login: Secure authentication interface
+ * - Dashboard: Main monitoring interface with enhanced AI features
+ * - AI Insights: Dedicated AI-powered analytics dashboard
+ * - API Docs: Interactive API documentation
+ * 
+ * Author: Third Umpire Team
+ * Version: 2.0.0 (Enhanced with Gemini AI)
+ */
+
 import React, { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from 'react-query'

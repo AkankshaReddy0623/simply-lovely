@@ -1,6 +1,21 @@
 """
 Gemini AI Service for Third Umpire - Enhanced AI Analysis
 This module integrates Google's Gemini AI for advanced threat analysis and natural language explanations.
+
+Features:
+- Natural language threat explanations
+- AI-generated security reports
+- Enhanced behavioral analysis
+- Intelligent alert insights
+- Threat intelligence analysis
+- Graceful fallback when API is unavailable
+
+The service provides a bridge between the traditional ML system and Google's
+advanced Gemini AI, enabling natural language explanations of security threats
+and comprehensive AI-powered security analysis.
+
+Author: Third Umpire Team
+Version: 2.0.0 (Enhanced with Gemini AI)
 """
 
 import os

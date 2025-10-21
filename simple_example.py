@@ -63,7 +63,7 @@ def simulate_normal_user():
             print(f"❌ Error: {e}")
 
 def simulate_suspicious_user():
-    """Simulate a suspicious user doing suspicious things"""
+    """Simulate a suspicious user doing suspicious things."""
     print("\n🚨 Simulating SUSPICIOUS User Activity:")
     print("=" * 45)
     

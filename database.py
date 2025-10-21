@@ -1,6 +1,20 @@
 """
 Database management for Third Umpire - AI Guard Dog System
 Handles data persistence and retrieval for user activities, alerts, and analytics.
+
+Features:
+- SQLite database for simplicity (easily upgradeable to PostgreSQL)
+- User activity tracking and storage
+- Alert management and storage
+- Dashboard statistics generation
+- Demo data generation for testing
+- User behavior profile storage
+
+The database manager provides a clean interface for all data operations,
+supporting both the traditional ML system and the enhanced AI features.
+
+Author: Third Umpire Team
+Version: 2.0.0 (Enhanced with Gemini AI)
 """
 
 import sqlite3

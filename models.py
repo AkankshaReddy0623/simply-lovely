@@ -1,6 +1,19 @@
 """
 Data models for Third Umpire - AI Guard Dog System
 Defines the data structures for user activities, alerts, and security events.
+
+Features:
+- Pydantic models for data validation and serialization
+- Enum definitions for consistent data types
+- Comprehensive user activity tracking models
+- Alert and security event models
+- Dashboard statistics models
+
+All models are designed to support both traditional ML processing
+and enhanced AI analysis with proper type safety and validation.
+
+Author: Third Umpire Team
+Version: 2.0.0 (Enhanced with Gemini AI)
 """
 
 from pydantic import BaseModel, Field

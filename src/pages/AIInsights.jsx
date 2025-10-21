@@ -1,3 +1,21 @@
+/**
+ * AI Insights Dashboard - Enhanced AI Analytics
+ * 
+ * Dedicated dashboard for AI-powered security insights and analysis.
+ * Features real-time AI status monitoring, threat intelligence,
+ * and comprehensive security reporting powered by Google Gemini AI.
+ * 
+ * Features:
+ * - AI service status monitoring
+ * - Threat intelligence analysis
+ * - Security report generation
+ * - User behavior analysis
+ * - Interactive AI insights
+ * 
+ * Author: Third Umpire Team
+ * Version: 2.0.0 (Enhanced with Gemini AI)
+ */
+
 import React, { useState, useEffect } from 'react'
 import { 
   SparklesIcon, 
@@ -97,13 +115,30 @@ const AIInsights = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-6 text-white">
-        <div className="flex items-center">
-          <SparklesIcon className="w-8 h-8 mr-3" />
-          <div>
-            <h1 className="text-2xl font-bold">AI-Powered Security Insights</h1>
-            <p className="text-purple-100">Enhanced threat analysis powered by Google Gemini AI</p>
+      {/* Enhanced Header with Status Indicator */}
+      <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-6 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-blue-600/20"></div>
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center">
+            <div className="p-2 bg-white/20 rounded-lg mr-4">
+              <SparklesIcon className="w-8 h-8" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">AI-Powered Security Insights</h1>
+              <p className="text-purple-100">Enhanced threat analysis powered by Google Gemini AI</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+              aiStatus?.ai_services?.gemini_ai === 'operational' 
+                ? 'bg-green-500/20 text-green-100 border border-green-400/30' 
+                : 'bg-yellow-500/20 text-yellow-100 border border-yellow-400/30'
+            }`}>
+              <div className={`w-2 h-2 rounded-full mr-2 ${
+                aiStatus?.ai_services?.gemini_ai === 'operational' ? 'bg-green-400' : 'bg-yellow-400'
+              }`}></div>
+              {aiStatus?.ai_services?.gemini_ai === 'operational' ? 'AI Active' : 'Fallback Mode'}
+            </div>
           </div>
         </div>
       </div>

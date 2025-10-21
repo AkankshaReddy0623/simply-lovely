@@ -80,12 +80,8 @@ GEMINI_API_KEY=your-gemini-api-key-here
 3. **Add to environment**: Set `GEMINI_API_KEY` in your `.env` file
 4. **Enhanced features**: Unlock AI-powered threat analysis, natural language explanations, and advanced security reporting
 
-> **Note**: The system works without Gemini AI (using traditional ML only), but Gemini integration provides significantly enhanced capabilities.
+> **Note**: The system works without Gemini AI (using traditional ML only), but Gemini integration provides significantly enhanced capabilities!
 
 ## 🤝 Contributing
 
 This project is built for a hackathon. Feel free to extend and improve!
-
-## 📄 License
-
-MIT License - feel free to use for your own projects!

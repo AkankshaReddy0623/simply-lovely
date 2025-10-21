@@ -1,7 +1,22 @@
 """
-AI Engine for Third Umpire - Anomaly Detection System
+AI Engine for Third Umpire - Enhanced Anomaly Detection System
 This module contains the machine learning algorithms for detecting suspicious user behavior.
-Enhanced with Gemini AI for advanced threat analysis and natural language explanations.
+Enhanced with Google Gemini AI integration for advanced threat analysis and natural language explanations.
+
+Features:
+- Traditional ML algorithms (Isolation Forest, DBSCAN, StandardScaler)
+- Gemini AI integration for natural language threat explanations
+- Combined ML + AI scoring for enhanced accuracy
+- Behavioral pattern analysis
+- Session-based anomaly detection
+- User behavior profiling
+
+The system uses a hybrid approach combining traditional machine learning
+with Google's Gemini AI to provide both accurate detection and human-readable
+explanations of security threats.
+
+Author: Third Umpire Team
+Version: 2.0.0 (Enhanced with Gemini AI)
 """
 
 import numpy as np

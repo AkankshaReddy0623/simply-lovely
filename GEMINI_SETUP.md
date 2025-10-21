@@ -15,7 +15,7 @@ DATABASE_URL=sqlite:///./third_umpire.db
 SECRET_KEY=your-secret-key-here
 DEBUG=True
 
-# Google Gemini AI Configuration
+# Google Gemini AI Configuration (Optional)
 GEMINI_API_KEY=your-gemini-api-key-here
 
 # Optional: Advanced Configuration

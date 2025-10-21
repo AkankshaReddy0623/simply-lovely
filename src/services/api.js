@@ -1,3 +1,20 @@
+/**
+ * API Service - Third Umpire AI Guard Dog System
+ * 
+ * Centralized API service for all backend communication.
+ * Handles both traditional endpoints and enhanced AI-powered endpoints.
+ * 
+ * Features:
+ * - Traditional ML endpoints (activities, alerts, dashboard)
+ * - Enhanced AI endpoints (threat intelligence, security reports)
+ * - Authentication handling
+ * - Error handling and logging
+ * - Request/response interceptors
+ * 
+ * Author: Third Umpire Team
+ * Version: 2.0.0 (Enhanced with Gemini AI)
+ */
+
 import axios from 'axios'
 
 // Create axios instance with base configuration

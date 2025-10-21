@@ -1,6 +1,20 @@
 """
 Third Umpire - AI Guard Dog System
 Main application entry point for the AI-driven security monitoring system.
+
+Enhanced with Google Gemini AI integration for advanced threat analysis,
+natural language explanations, and intelligent security insights.
+
+Features:
+- Real-time user activity monitoring
+- AI-powered anomaly detection (ML + Gemini AI)
+- Enhanced alert system with natural language explanations
+- Comprehensive security dashboard
+- WebSocket-based real-time updates
+- Fallback mode when AI services are unavailable
+
+Author: Third Umpire Team
+Version: 2.0.0 (Enhanced with Gemini AI)
 """
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
